@@ -19,6 +19,16 @@ class SimpleViewer(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         self.parent = parent
         QtOpenGL.QGLWidget.__init__(self, parent)
+
+        # original postion of observation
+        self.observation_x = 6.0
+        self.observation_y = 0.0
+        self.observation_z = 1.0
+
+        self.offset_z = 1.0
+
+        self.angle1 = 0
+        self.angle2 = 0
         
         # Direction of light
         self.direction = [1.0, 2.0, 1.0, 1.0]
@@ -35,6 +45,8 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         # objects
         self.robot = robot()
         self.bowl = bowl()
+        self.ball = ball()
+        self.ground = ground()
 
     def initializeGL(self):
         glEnable(GL_DEPTH_TEST)
@@ -59,16 +71,21 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
 
     def resizeGL(self, width, height):
-        width = width
-        height = height
+        self.original_width = width
+        self.original_height = height
         aspect = width/height
         glViewport( 0, 0, width, height )
 
         glMatrixMode( GL_PROJECTION )
         glLoadIdentity()
-        gluPerspective( 45.0, aspect, 0.1, 10.0 )
 
-        gluLookAt( 6.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 )
+        gluPerspective( 45.0, aspect, 0.1, 15.0 )
+
+        self.observation_x = 6.0 * cos(self.angle1) * cos(self.angle2)
+        self.observation_y = 6.0 * sin(self.angle1) * cos(self.angle2)
+        self.observation_z = 6.0 * sin(self.angle2)
+
+        gluLookAt( self.observation_x, self.observation_y, self.observation_z + self.offset_z, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 )
 
         # glPointSize(5.0)
         # glLineWidth(5.0)
@@ -82,6 +99,17 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         # draw objects
         self.robot.draw()
         self.bowl.draw()
+        self.ball.draw()
+        self.ground.draw()
+
+    def setRotX(self, val):
+        self.angle1 = 2 * pi * val/100
+        self.resizeGL(self.original_width, self.original_height)
+
+    def setRotY(self, val):
+        self.angle2 = 0.5 * pi * val/100
+        self.resizeGL(self.original_width, self.original_height)
+
     
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -111,6 +139,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
 
         gui_layout.addWidget(self.glWidget)
+
+        # sliders x, y, z
+        SliderX = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        SliderX.valueChanged.connect(lambda val: self.glWidget.setRotX(val))
+
+        gui_layout.addWidget(SliderX)
+
+        SliderY = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        SliderY.valueChanged.connect(lambda val: self.glWidget.setRotY(val))
+
+        gui_layout.addWidget(SliderY)
+
 
 if __name__ == '__main__':
 
