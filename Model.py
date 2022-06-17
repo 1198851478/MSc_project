@@ -3,28 +3,60 @@ import sys
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from simple_viewer import *
-from math import *
-
-width = 800
-height = 600
-aspect = width/height
-
-
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtOpenGL
+
+from objects import *
+
+width = 800
+height = 600
+aspect = width/height
 
 class SimpleViewer(QtOpenGL.QGLWidget):
 
     def __init__(self, parent=None):
         self.parent = parent
         QtOpenGL.QGLWidget.__init__(self, parent)
+        
+        # Direction of light
+        self.direction = [1.0, 2.0, 1.0, 1.0]
+
+        # Intensity of light
+        self.intensity = [0.7, 0.7, 0.7, 1.0]
+
+        # Intensity of ambient light
+        self.ambient_intensity = [0.3, 0.3, 0.3, 1.0]
+
+        # The surface type(Flat or Smooth)
+        self.surface = GL_SMOOTH
+
+        # objects
+        self.robot = robot()
+        self.bowl = bowl()
 
     def initializeGL(self):
         glEnable(GL_DEPTH_TEST)
+        # background color
         glClearColor( 0.7, 0.7, 1.0, 0.0 )
+
+        # Enable lighting
+        glEnable(GL_LIGHTING)
+
+        # Set light model
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, self.ambient_intensity)
+
+        # Enable light number 0
+        glEnable(GL_LIGHT0)
+
+        # Set position and intensity of light
+        glLightfv(GL_LIGHT0, GL_POSITION, self.direction)
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, self.intensity)
+
+        # Setup the material
+        glEnable(GL_COLOR_MATERIAL)
+        glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
 
     def resizeGL(self, width, height):
         width = width
@@ -43,83 +75,13 @@ class SimpleViewer(QtOpenGL.QGLWidget):
 
     def paintGL(self):
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
-        # glBegin(GL_QUADS)
-        # glVertex3f(-0.5, -0.5, 0.0)
-        # glVertex3f(0.5, -0.5, 0.0)
-        # glVertex3f(0.5, 0.5, 0.0)
-        # glVertex3f(-0.5, 0.5, 0.0)
-        # glEnd()
-        lats = 100
-        longs = 100
-        for i in range(0, 50 + 1):
-                lat0 = pi * (-0.5 + float(float(i - 1) / float(lats)))
-                z0 = sin(lat0)
-                zr0 = cos(lat0)
+        
+        # Set shade model
+        glShadeModel(self.surface)
 
-                lat1 = pi * (-0.5 + float(float(i) / float(lats)))
-                z1 = sin(lat1)
-                zr1 = cos(lat1)
-
-                # Use Quad strips to draw the sphere
-                glBegin(GL_QUAD_STRIP)
-
-                for j in range(0, longs + 1):
-                    lng = 2 * pi * float(float(j - 1) / float(longs))
-                    x = cos(lng)
-                    y = sin(lng)
-                    glColor3f(0.0, 1.0, 0.0);
-                    glNormal3f(x * zr0, y * zr0, z0+1)
-                    glVertex3f(x * zr0, y * zr0, z0+1)
-                    glNormal3f(x * zr1, y * zr1, z1+1)
-                    glVertex3f(x * zr1, y * zr1, z1+1)
-
-                glEnd()
-
-        # top face
-        glBegin(GL_QUADS)
-        glColor3f(1.0, 1.0, 0.0);    # Yellow
-
-        glVertex3f(1.0, 1.0, -1.0);
-        glVertex3f(-1.0, 1.0, -1.0);
-        glVertex3f(-1.0, 1.0, 0.0);
-        glVertex3f(1.0, 1.0, 0.0);
-
-        # Bottom face
-
-        glVertex3f(1.0, -1.0, 0.0);
-        glVertex3f(-1.0, -1.0, 0.0);
-        glVertex3f(-1.0, -1.0, -1.0);
-        glVertex3f(1.0, -1.0, -1.0);
-
-        # Front face  (z = 1.0f)
-
-        glVertex3f(1.0, 1.0, 0.0);
-        glVertex3f(-1.0, 1.0, 0.0);
-        glVertex3f(-1.0, -1.0, 0.0);
-        glVertex3f(1.0, -1.0, 0.0);
-
-        # Back face (z = -1.0f)
-
-        glVertex3f(1.0, -1.0, -1.0);
-        glVertex3f(-1.0, -1.0, -1.0);
-        glVertex3f(-1.0, 1.0, -1.0);
-        glVertex3f(1.0, 1.0, -1.0);
-
-        # Left face (x = -1.0f)
-
-        glVertex3f(-1.0, 1.0, 0.0);
-        glVertex3f(-1.0, 1.0, -1.0);
-        glVertex3f(-1.0, -1.0, -1.0);
-        glVertex3f(-1.0, -1.0, 0.0);
-
-        # Right face (x = 1.0f)
-
-        glVertex3f(1.0, 1.0, -1.0);
-        glVertex3f(1.0, 1.0, 0.0);
-        glVertex3f(1.0, -1.0, 0.0);
-        glVertex3f(1.0, -1.0, -1.0);
-
-        glEnd()
+        # draw objects
+        self.robot.draw()
+        self.bowl.draw()
     
 
 class MainWindow(QtWidgets.QMainWindow):
