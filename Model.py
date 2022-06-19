@@ -37,7 +37,7 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         self.intensity = [0.7, 0.7, 0.7, 1.0]
 
         # Intensity of ambient light
-        self.ambient_intensity = [0.3, 0.3, 0.3, 1.0]
+        self.ambient_intensity = [0.5, 0.5, 0.5, 1.0]
 
         # The surface type(Flat or Smooth)
         self.surface = GL_SMOOTH

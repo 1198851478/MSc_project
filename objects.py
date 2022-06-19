@@ -1,5 +1,9 @@
 from OpenGL.GL import *
 from math import *
+import os
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+from pygame import *
 
 class robot:
     def __init__(self):
@@ -123,6 +127,8 @@ class ball:
         self.redius = 0.2
 
     def draw(self):
+        glEnable(GL_TEXTURE_2D)
+        # glBindTexture(GL_TEXTURE_2D,self.read_texture())
         for i in range(0, self.lats + 1):
                 lat0 = pi * (-0.5 + float(float(i - 1) / float(self.lats)))
                 z0 = sin(lat0)
@@ -148,16 +154,72 @@ class ball:
 
                 glEnd()
 
+    def read_texture(self):
+        textureSurface = image.load('figure/sphere_texture.jpg')
+        textureData = image.tostring(textureSurface, "RGBA", 1)
+        width = textureSurface.get_width()
+        height = textureSurface.get_height()
+
+        textID = glGenTextures(1)
+
+        glBindTexture(GL_TEXTURE_2D, textID)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData)
+        return textID
+
 class ground:
     def __init__(self):
         self.length = 8
         self.width = 8
+        self.textureSurface = image.load('figure/ground3.png')
+        self.show_length = min(self.textureSurface.get_height(), self.textureSurface.get_width())/3
+        self.offset_x = self.show_length
+        self.offset_y = self.show_length
 
     def draw(self):
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D,self.read_texture())
         glBegin(GL_QUADS)
-        glColor3f(1.0, 0.3, 0.7);    # Yellow
+
+        glColor3f( 1.0,1.0,1.0)    # use the color of the texture
+
+        glTexCoord2f(1.0, 0.0)
         glVertex3f(self.length/2, self.width/2, -1.0);
+        glTexCoord2f(0.0, 0.0)
         glVertex3f(self.length/2, -self.width/2, -1.0);
+        glTexCoord2f(0.0, 1.0)
         glVertex3f(-self.length/2, -self.width/2, -1.0);
+        glTexCoord2f(1.0, 1.0)
         glVertex3f(-self.length/2, self.width/2, -1.0);
         glEnd()
+
+    def read_texture(self):
+        if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:
+            self.offset_x = self.show_length
+        else:
+            self.offset_x += 1
+        if self.offset_y >= self.show_length * 2 or self.offset_y <= 0:
+            self.offset_y = self.show_length
+        else:
+            self.offset_y += 1
+        textureSurface = self.textureSurface.subsurface(self.offset_x, self.offset_y, self.show_length, self.show_length)
+        textureData = image.tostring(textureSurface, "RGBA", 1)
+
+        texid = glGenTextures(1)
+
+        glBindTexture(GL_TEXTURE_2D, texid)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.show_length, self.show_length,
+                    0, GL_RGBA, GL_UNSIGNED_BYTE, textureData)
+
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        return texid
