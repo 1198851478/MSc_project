@@ -2,6 +2,8 @@ from OpenGL.GL import *
 from math import *
 import os
 from OpenGL.GLU import *
+from numpy import arctan
+from regex import P
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pygame import *
@@ -126,22 +128,23 @@ class ball:
         self.longs = 100
         self.center = [0.0, 0.0, 0.2]
         self.redius = 0.2
-        self.direction = [0.0,0.0,1.0]
+        self.rotation = [80, 60, 45]
 
     def arctan(self, value1, value2):
-        if value1 > 0 and value2 == 0:
+        if value1 > 0.0 and value2 == 0.0:
             return pi*0.5
-        if value1 < 0 and value2 == 0:
+        if value1 < 0.0 and value2 == 0.0:
             return pi*1.5
-        if value1 == 0 and value2 == 0:
+        if value1 == 0.0 and value2 == 0.0:
             return 0
+        return atan(value1/value2)
 
-    def update_rotate_angle(self, new_direction):
-        self.direction = new_direction
-        rotation_x = atan(-self.direction[1]/self.direction[2])
-        rotation_y = atan(self.direction[0]/self.direction[2])
-        rotation_z = atan(self.direction[2]/self.direction[1])
-        return [rotation_x, rotation_y, rotation_z]
+    def calculate_rotate_angle(self, new_rotation):
+        self.rotation = new_rotation
+        self.rotation[2] += 3
+        self.rotation[1] += 0
+        self.rotation[0] += 0
+        return self.rotation
 
 
     def draw(self):
@@ -152,7 +155,7 @@ class ball:
 
         glPushMatrix(); #remember current matrix
 
-        rotation = [0,0,0]
+        rotation = self.calculate_rotate_angle(self.rotation)
         glRotate(rotation[0], 1, 0, 0)
         glRotate(rotation[1], 0, 1, 0)
         glRotate(rotation[2], 0, 0, 1)
