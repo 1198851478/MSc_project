@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from math import *
 import os
+from OpenGL.GLU import *
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pygame import *
@@ -125,37 +126,73 @@ class ball:
         self.longs = 100
         self.center = [0.0, 0.0, 0.2]
         self.redius = 0.2
+        self.direction = [0.0,0.0,1.0]
+
+    def arctan(self, value1, value2):
+        if value1 > 0 and value2 == 0:
+            return pi*0.5
+        if value1 < 0 and value2 == 0:
+            return pi*1.5
+        if value1 == 0 and value2 == 0:
+            return 0
+
+    def update_rotate_angle(self, new_direction):
+        self.direction = new_direction
+        rotation_x = atan(-self.direction[1]/self.direction[2])
+        rotation_y = atan(self.direction[0]/self.direction[2])
+        rotation_z = atan(self.direction[2]/self.direction[1])
+        return [rotation_x, rotation_y, rotation_z]
+
 
     def draw(self):
+        glMatrixMode(GL_MODELVIEW);
         glEnable(GL_TEXTURE_2D)
-        # glBindTexture(GL_TEXTURE_2D,self.read_texture())
-        for i in range(0, self.lats + 1):
-                lat0 = pi * (-0.5 + float(float(i - 1) / float(self.lats)))
-                z0 = sin(lat0)
-                zr0 = cos(lat0)
 
-                lat1 = pi * (-0.5 + float(float(i) / float(self.lats)))
-                z1 = sin(lat1)
-                zr1 = cos(lat1)
+        glBindTexture(GL_TEXTURE_2D,self.read_texture())
 
-                # Use Quad strips to draw the sphere
-                glBegin(GL_QUAD_STRIP)
+        glPushMatrix(); #remember current matrix
 
-                for j in range(0, self.longs + 1):
-                    lng = 2 * pi * float(float(j - 1) / float(self.longs))
-                    x = cos(lng)
-                    y = sin(lng)
+        rotation = [0,0,0]
+        glRotate(rotation[0], 1, 0, 0)
+        glRotate(rotation[1], 0, 1, 0)
+        glRotate(rotation[2], 0, 0, 1)
 
-                    glColor3f(1.0, 0.0, 0.0);
-                    glNormal3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
-                    glVertex3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
-                    glNormal3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
-                    glVertex3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
+        qobj = gluNewQuadric()
+        gluQuadricTexture(qobj, GL_TRUE)
+        gluSphere(qobj, 1, 50, 50)
+        gluDeleteQuadric(qobj)
+        glDisable(GL_TEXTURE_2D)
+        glPopMatrix(); #restore matrix
 
-                glEnd()
+
+        # # glBindTexture(GL_TEXTURE_2D,self.read_texture())
+        # for i in range(0, self.lats + 1):
+        #         lat0 = pi * (-0.5 + float(float(i - 1) / float(self.lats)))
+        #         z0 = sin(lat0)
+        #         zr0 = cos(lat0)
+
+        #         lat1 = pi * (-0.5 + float(float(i) / float(self.lats)))
+        #         z1 = sin(lat1)
+        #         zr1 = cos(lat1)
+
+        #         # Use Quad strips to draw the sphere
+        #         glBegin(GL_QUAD_STRIP)
+
+        #         for j in range(0, self.longs + 1):
+        #             lng = 2 * pi * float(float(j - 1) / float(self.longs))
+        #             x = cos(lng)
+        #             y = sin(lng)
+
+        #             glColor3f(1.0, 0.0, 0.0);
+        #             glNormal3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
+        #             glVertex3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
+        #             glNormal3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
+        #             glVertex3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
+
+        #         glEnd()
 
     def read_texture(self):
-        textureSurface = image.load('figure/sphere_texture.jpg')
+        textureSurface = image.load('figure/football.jpg')
         textureData = image.tostring(textureSurface, "RGBA", 1)
         width = textureSurface.get_width()
         height = textureSurface.get_height()
@@ -163,15 +200,13 @@ class ball:
         textID = glGenTextures(1)
 
         glBindTexture(GL_TEXTURE_2D, textID)
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData)
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData)
         return textID
 
 class ground:
@@ -199,6 +234,7 @@ class ground:
         glTexCoord2f(1.0, 1.0)
         glVertex3f(-self.length/2, self.width/2, -1.0);
         glEnd()
+        glDisable(GL_TEXTURE_2D)
 
     def read_texture(self):
         if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:

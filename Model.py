@@ -97,8 +97,8 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         glShadeModel(self.surface)
 
         # draw objects
-        self.robot.draw()
-        self.bowl.draw()
+        # self.robot.draw()
+        # self.bowl.draw()
         self.ball.draw()
         self.ground.draw()
 
