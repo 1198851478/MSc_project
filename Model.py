@@ -14,6 +14,24 @@ width = 800
 height = 600
 aspect = width/height
 
+_ERROR_ILLEGAL_INPUT_ = -1
+_ERROR_OUT_OF_RANGE_ = -2
+
+
+def IsNum(str):
+    # if str is int
+    if str.isdigit():
+        return True
+    s=str.split('.')
+    if len(s)>2:
+        return False
+    else:
+        for si in s:
+            if not si.isdigit():
+                return False
+            return True
+
+
 class SimpleViewer(QtOpenGL.QGLWidget):
 
     def __init__(self, parent=None):
@@ -97,8 +115,8 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         glShadeModel(self.surface)
 
         # draw objects
-        # self.robot.draw()
-        # self.bowl.draw()
+        self.robot.draw()
+        self.bowl.draw()
         self.ball.draw()
         self.ground.draw()
 
@@ -109,6 +127,10 @@ class SimpleViewer(QtOpenGL.QGLWidget):
     def setRotY(self, val):
         self.angle2 = 0.5 * pi * val/100
         self.resizeGL(self.original_width, self.original_height)
+
+    def update_parameters(self, redius, mess, speedx, speedy):
+        self.ball.update_parameters(redius, mess)
+        self.ground.update_parameters(speedx, speedy)
 
     
 
@@ -143,13 +165,52 @@ class MainWindow(QtWidgets.QMainWindow):
         # sliders x, y, z
         SliderX = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         SliderX.valueChanged.connect(lambda val: self.glWidget.setRotX(val))
-
         gui_layout.addWidget(SliderX)
 
         SliderY = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         SliderY.valueChanged.connect(lambda val: self.glWidget.setRotY(val))
-
         gui_layout.addWidget(SliderY)
+
+        # parameters form
+        # the redus of the ball
+        parameters = QtWidgets.QGridLayout()
+
+        parameters.addWidget(QtWidgets.QLabel("Ball Redius:"), 0, 0)
+        self.redius_text = QtWidgets.QLineEdit()
+        self.redius_text.setClearButtonEnabled(True)
+        parameters.addWidget(self.redius_text, 0, 1)
+
+        # the mess of the ball
+        parameters.addWidget(QtWidgets.QLabel("Ball Mess:"), 1, 0)
+        self.mess_text = QtWidgets.QLineEdit()
+        self.mess_text.setClearButtonEnabled(True)
+        parameters.addWidget(self.mess_text, 1, 1)
+
+        # the speed of the robot
+        parameters.addWidget(QtWidgets.QLabel("Speed(x) of Robot:"), 0, 2)
+        self.Speedx_text = QtWidgets.QLineEdit()
+        self.Speedx_text.setClearButtonEnabled(True)
+        parameters.addWidget(self.Speedx_text, 0, 3)
+
+        # the speed of the robot
+        parameters.addWidget(QtWidgets.QLabel("Speed(x) of Robot:"), 1, 2)
+        self.Speedy_text = QtWidgets.QLineEdit()
+        self.Speedy_text.setClearButtonEnabled(True)
+        parameters.addWidget(self.Speedy_text, 1, 3)
+
+        gui_layout.addLayout(parameters)
+
+        # the button for run
+        Run_button = QtWidgets.QPushButton("Run")
+        Run_button.clicked.connect(self.update_parameters)
+        gui_layout.addWidget(Run_button)
+
+    def update_parameters(self):
+        if not (IsNum(self.redius_text.text()) and IsNum(self.mess_text.text()) and \
+            IsNum(self.Speedx_text.text()) and IsNum(self.Speedy_text.text())):
+            return _ERROR_ILLEGAL_INPUT_
+        self.glWidget.update_parameters(float(self.redius_text.text()), float(self.mess_text.text()), float(self.Speedx_text.text()),\
+            float(self.Speedy_text.text()))
 
 
 if __name__ == '__main__':

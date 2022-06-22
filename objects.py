@@ -2,7 +2,6 @@ from OpenGL.GL import *
 from math import *
 import os
 from OpenGL.GLU import *
-from numpy import arctan
 from regex import P
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -127,25 +126,17 @@ class ball:
         self.lats = 100
         self.longs = 100
         self.center = [0.0, 0.0, 0.2]
-        self.redius = 0.2
-        self.rotation = [80, 60, 45]
+        self.redius = 0.1
+        self.rotation = [0, 0, 0]
+        self.position = [0, 0, 0.1]
 
-    def arctan(self, value1, value2):
-        if value1 > 0.0 and value2 == 0.0:
-            return pi*0.5
-        if value1 < 0.0 and value2 == 0.0:
-            return pi*1.5
-        if value1 == 0.0 and value2 == 0.0:
-            return 0
-        return atan(value1/value2)
+    # change the redus and the mess of the ball
+    def update_parameters(self, redius, mess):
+        self.redius = redius
 
-    def calculate_rotate_angle(self, new_rotation):
+    def update_position(self, new_rotation, new_position):
         self.rotation = new_rotation
-        self.rotation[2] += 3
-        self.rotation[1] += 0
-        self.rotation[0] += 0
-        return self.rotation
-
+        self.position = new_position
 
     def draw(self):
         glMatrixMode(GL_MODELVIEW);
@@ -154,45 +145,20 @@ class ball:
         glBindTexture(GL_TEXTURE_2D,self.read_texture())
 
         glPushMatrix(); #remember current matrix
+        
+        glTranslatef(self.position[0], self.position[1], self.position[2])
 
-        rotation = self.calculate_rotate_angle(self.rotation)
-        glRotate(rotation[0], 1, 0, 0)
-        glRotate(rotation[1], 0, 1, 0)
-        glRotate(rotation[2], 0, 0, 1)
+        glRotate(self.rotation[0], 1, 0, 0)
+        glRotate(self.rotation[1], 0, 1, 0)
+        glRotate(self.rotation[2], 0, 0, 1)
 
+        glColor3f( 1.0,1.0,1.0)    # use the color of the texture
         qobj = gluNewQuadric()
         gluQuadricTexture(qobj, GL_TRUE)
-        gluSphere(qobj, 1, 50, 50)
+        gluSphere(qobj, self.redius, 50, 50)
         gluDeleteQuadric(qobj)
         glDisable(GL_TEXTURE_2D)
         glPopMatrix(); #restore matrix
-
-
-        # # glBindTexture(GL_TEXTURE_2D,self.read_texture())
-        # for i in range(0, self.lats + 1):
-        #         lat0 = pi * (-0.5 + float(float(i - 1) / float(self.lats)))
-        #         z0 = sin(lat0)
-        #         zr0 = cos(lat0)
-
-        #         lat1 = pi * (-0.5 + float(float(i) / float(self.lats)))
-        #         z1 = sin(lat1)
-        #         zr1 = cos(lat1)
-
-        #         # Use Quad strips to draw the sphere
-        #         glBegin(GL_QUAD_STRIP)
-
-        #         for j in range(0, self.longs + 1):
-        #             lng = 2 * pi * float(float(j - 1) / float(self.longs))
-        #             x = cos(lng)
-        #             y = sin(lng)
-
-        #             glColor3f(1.0, 0.0, 0.0);
-        #             glNormal3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
-        #             glVertex3f(x * zr0 * self.redius + self.center[0], y * zr0 * self.redius + self.center[1], z0 * self.redius + self.center[2])
-        #             glNormal3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
-        #             glVertex3f(x * zr1 * self.redius + self.center[0], y * zr1 * self.redius + self.center[1], z1 * self.redius + self.center[2])
-
-        #         glEnd()
 
     def read_texture(self):
         textureSurface = image.load('figure/football.jpg')
@@ -221,6 +187,19 @@ class ground:
         self.offset_x = self.show_length
         self.offset_y = self.show_length
 
+    def update_offset(self, offset_x, offset_y):
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+
+        if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:
+            self.offset_x = self.offset_x % self.show_length + self.show_length
+
+        if self.offset_y >= self.show_length * 2 or self.offset_y <= 0:
+            self.offset_y = self.offset_y % self.show_length + self.show_length
+
+    def update_parameters(self, speedx, speedy):
+        print("set speedx sppeedy", speedx, speedy)
+
     def draw(self):
         glEnable(GL_TEXTURE_2D)
         glBindTexture(GL_TEXTURE_2D,self.read_texture())
@@ -240,14 +219,6 @@ class ground:
         glDisable(GL_TEXTURE_2D)
 
     def read_texture(self):
-        if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:
-            self.offset_x = self.show_length
-        else:
-            self.offset_x += 1
-        if self.offset_y >= self.show_length * 2 or self.offset_y <= 0:
-            self.offset_y = self.show_length
-        else:
-            self.offset_y += 1
         textureSurface = self.textureSurface.subsurface(self.offset_x, self.offset_y, self.show_length, self.show_length)
         textureData = image.tostring(textureSurface, "RGBA", 1)
 
