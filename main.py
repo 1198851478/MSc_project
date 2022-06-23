@@ -14,8 +14,7 @@ width = 800
 height = 600
 aspect = width/height
 
-# error code
-_ERROR_ILLEGAL_INPUT_ = -1
+_OBSERVATION_DISTANCE_ = 6.0
 
 # parameters in new window
 _ROBOT_MESS_MINI_ = 1.0
@@ -40,11 +39,6 @@ class SimpleViewer(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         self.parent = parent
         QtOpenGL.QGLWidget.__init__(self, parent)
-
-        # original postion of observation
-        self.observation_x = 6.0
-        self.observation_y = 0.0
-        self.observation_z = 1.0
 
         self.offset_z = 1.0
 
@@ -99,9 +93,9 @@ class SimpleViewer(QtOpenGL.QGLWidget):
 
         gluPerspective( 45.0, aspect, 0.1, 15.0 )
 
-        self.observation_x = 6.0 * cos(self.angle1) * cos(self.angle2)
-        self.observation_y = 6.0 * sin(self.angle1) * cos(self.angle2)
-        self.observation_z = 6.0 * sin(self.angle2)
+        self.observation_x = _OBSERVATION_DISTANCE_ * cos(self.angle1) * cos(self.angle2)
+        self.observation_y = _OBSERVATION_DISTANCE_ * sin(self.angle1) * cos(self.angle2)
+        self.observation_z = _OBSERVATION_DISTANCE_ * sin(self.angle2)
 
         gluLookAt( self.observation_x, self.observation_y, self.observation_z + self.offset_z, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 )
 

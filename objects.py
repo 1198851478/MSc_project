@@ -10,34 +10,35 @@ from pygame import *
 class robot:
     def __init__(self):
         # def _init_():
-        length = 2.0
-        width = 2.0
-        height = 1.0
-        center = [0.0, 0.0, -0.5]
+        self.length = 2.0
+        self.width = 2.0
+        self.height = 1.0
+        self.center = [0.0, 0.0, -0.5]
+        self.mess = 1.0
 
         # botton front right
-        self.position_b_f_r = [center[0] + length/2, center[0] + width/2 , center[2] - height/2]
+        self.position_b_f_r = [self.center[0] + self.length/2, self.center[0] + self.width/2 , self.center[2] - self.height/2]
 
         # botton front left
-        self.position_b_f_l = [center[0] + length/2, center[0] - width/2 , center[2] - height/2]
+        self.position_b_f_l = [self.center[0] + self.length/2, self.center[0] - self.width/2 , self.center[2] - self.height/2]
 
         # top front left
-        self.position_t_f_l = [center[0] + length/2, center[0] - width/2 , center[2] + height/2]
+        self.position_t_f_l = [self.center[0] + self.length/2, self.center[0] - self.width/2 , self.center[2] + self.height/2]
 
         # top front right
-        self.position_t_f_r = [center[0] + length/2, center[0] + width/2 , center[2] + height/2]
+        self.position_t_f_r = [self.center[0] + self.length/2, self.center[0] + self.width/2 , self.center[2] + self.height/2]
 
         # botton back right
-        self.position_b_b_r = [center[0] - length/2, center[0] + width/2 , center[2] - height/2]
+        self.position_b_b_r = [self.center[0] - self.length/2, self.center[0] + self.width/2 , self.center[2] - self.height/2]
 
         # botton back left
-        self.position_b_b_l = [center[0] - length/2, center[0] - width/2 , center[2] - height/2]
+        self.position_b_b_l = [self.center[0] - self.length/2, self.center[0] - self.width/2 , self.center[2] - self.height/2]
 
         # top back left
-        self.position_t_b_l = [center[0] - length/2, center[0] - width/2 , center[2] + height/2]
+        self.position_t_b_l = [self.center[0] - self.length/2, self.center[0] - self.width/2 , self.center[2] + self.height/2]
 
         # top back right
-        self.position_t_b_r = [center[0] - length/2, center[0] + width/2 , center[2] + height/2]
+        self.position_t_b_r = [self.center[0] - self.length/2, self.center[0] + self.width/2 , self.center[2] + self.height/2]
 
         
     def draw(self):
@@ -129,6 +130,7 @@ class ball:
         self.redius = 0.1
         self.rotation = [0, 0, 0]
         self.position = [0, 0, 0.1]
+        self.mess = 0.1
 
     # change the redus and the mess of the ball
     def update_parameters(self, redius, mess):
@@ -186,6 +188,7 @@ class ground:
         self.show_length = min(self.textureSurface.get_height(), self.textureSurface.get_width())/3
         self.offset_x = self.show_length
         self.offset_y = self.show_length
+        self.coordinate_z = -1.0
 
     def update_offset(self, offset_x, offset_y):
         self.offset_x = offset_x
@@ -208,13 +211,13 @@ class ground:
         glColor3f( 1.0,1.0,1.0)    # use the color of the texture
 
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(self.length/2, self.width/2, -1.0);
+        glVertex3f(self.length/2, self.width/2, self.coordinate_z);
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(self.length/2, -self.width/2, -1.0);
+        glVertex3f(self.length/2, -self.width/2, self.coordinate_z);
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(-self.length/2, -self.width/2, -1.0);
+        glVertex3f(-self.length/2, -self.width/2, self.coordinate_z);
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(-self.length/2, self.width/2, -1.0);
+        glVertex3f(-self.length/2, self.width/2, self.coordinate_z);
         glEnd()
         glDisable(GL_TEXTURE_2D)
 
