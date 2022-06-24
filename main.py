@@ -9,6 +9,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtOpenGL
 
 from model import *
+from model import _UPDATE_INTERVAL_
 
 width = 800
 height = 600
@@ -195,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initGUI()
         
         timer = QtCore.QTimer(self)
-        timer.setInterval(20)   # period, in milliseconds
+        timer.setInterval(_UPDATE_INTERVAL_)   # period, in milliseconds
         timer.timeout.connect(self.Update_GUI)
         timer.start()
     

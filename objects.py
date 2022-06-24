@@ -2,10 +2,11 @@ from OpenGL.GL import *
 from math import *
 import os
 from OpenGL.GLU import *
-from regex import P
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pygame import *
+
+import numpy as np
 
 class robot:
     def __init__(self):
@@ -13,7 +14,7 @@ class robot:
         self.length = 2.0
         self.width = 2.0
         self.height = 1.0
-        self.center = [0.0, 0.0, -0.5]
+        self.center = np.array([0.0, 0.0, -0.5])
         self.mess = 1.0
 
         # botton front right
@@ -93,7 +94,7 @@ class bowl:
     def __init__(self):
         self.lats = 100
         self.longs = 100
-        self.center = [0.0, 0.0, 1.0]
+        self.center = np.array([0.0, 0.0, 1.0])
         self.redius = 1.0
 
     def draw(self):
@@ -126,10 +127,10 @@ class ball:
     def __init__(self):
         self.lats = 100
         self.longs = 100
-        self.center = [0.0, 0.0, 0.2]
+        self.center = np.array([0.0, 0.0, 0.2])
         self.redius = 0.1
-        self.rotation = [0, 0, 0]
-        self.position = [0, 0, 0.1]
+        self.rotation = np.array([0, 0, 0])
+        self.position = np.array([0, 0, 0.1])
         self.mess = 0.1
 
     # change the redus and the mess of the ball
