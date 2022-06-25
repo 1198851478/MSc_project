@@ -1,6 +1,9 @@
 import numpy as np
+from math import *
 
-a = np.array([1,2,3])
-b = np.array([5,9,2])
-
-print(a[1]-b[1])
+e_r = np.array([0,1,0])/np.linalg.norm(np.array([0,1,0]))
+print(e_r)
+e_Phi = (np.array([1, 0, 0])* e_r)
+print(e_Phi)
+if e_Phi==0:
+    print("aa")
