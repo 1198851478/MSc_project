@@ -230,8 +230,9 @@ class model:
         composition_force = self.forces_analysis(collision_forces)
         # based on composition force to update the position of the ball and update the velocity of the ball
         self.motion_analysis(composition_force, collision_flag)
-        # Avoid moulding when collision
-        self.Position_Correction(collision_flag)
+        if self.position_correction_flag:
+            # Avoid moulding when collision
+            self.Position_Correction(collision_flag)
 
     def draw(self):
         # draw objects
@@ -242,11 +243,12 @@ class model:
 
     def update_parameters(self, parameters):
         self.damping_offset = parameters["energy loss"]
-        self.ball_speed -= np.array([parameters["speed y"], parameters["speed x"], 0]) - self.relative_speed
-        self.relative_speed = np.array([parameters["speed y"], parameters["speed x"], 0])
+        self.ball_speed -= np.array([parameters["speed x"], parameters["speed y"], 0]) - self.relative_speed
+        self.relative_speed = np.array([parameters["speed x"], parameters["speed y"], 0])
+        self.position_correction_flag = parameters["position correction"]
 
         self.ball.update_parameters(parameters["redius"])
-        self.ground.update_parameters(parameters["speed x"], parameters["speed y"])
+        self.ground.update_parameters(parameters["speed y"], parameters["speed x"])
 
 
     def reset(self):
