@@ -128,18 +128,19 @@ class ball:
     def __init__(self):
         self.lats = 100
         self.longs = 100
-        self.center = np.array([0.0, 0.5, 1.0])
+        self.center = np.array([0.0, 0.0, 1.0])
+        self.draw_center = self.center
         self.redius = 0.4
-        self.rotation = np.array([0, 0, 0])
+        self.rotation = np.array([0.0, 0.0, 0.0])
+        self.rotation_speed = np.array([0.0, 0.0, 0.0])
         self.mess = 0.1
 
     # change the redus and the mess of the ball
-    def update_parameters(self, redius, mess):
+    def update_parameters(self, redius):
         self.redius = redius
 
-    def update_position(self, new_rotation, new_center):
-        self.rotation = new_rotation
-        self.center = new_center
+    def update_rotation_speed(self, new_rotation_speed):
+        self.rotation_speed = new_rotation_speed
 
     def draw(self):
         glMatrixMode(GL_MODELVIEW);
@@ -149,11 +150,11 @@ class ball:
 
         glPushMatrix(); #remember current matrix
         
-        glTranslatef(self.center[0], self.center[1], self.center[2])
-
-        glRotate(self.rotation[0], 1, 0, 0)
-        glRotate(self.rotation[1], 0, 1, 0)
-        glRotate(self.rotation[2], 0, 0, 1)
+        glTranslatef(self.draw_center[0], self.draw_center[1], self.draw_center[2])
+        self.rotation += self.rotation_speed
+        glRotate(-self.rotation[1], 1, 0, 0)
+        glRotate(self.rotation[0], 0, 1, 0)
+        # glRotate(self.rotation[2], 0, 0, 1)
 
         glColor3f( 1.0,1.0,1.0)    # use the color of the texture
         qobj = gluNewQuadric()
@@ -185,7 +186,7 @@ class ground:
     def __init__(self):
         self.length = 8
         self.width = 8
-        self.textureSurface = image.load('figure/ground3.png')
+        self.textureSurface = image.load('figure/flower_ground.png')
         self.show_length = min(self.textureSurface.get_height(), self.textureSurface.get_width())/3
         self.offset_x = self.show_length
         self.offset_y = self.show_length
@@ -194,8 +195,8 @@ class ground:
         self.coordinate_z = -1.0
 
     def update_offset(self):
-        self.offset_x += self.speed_x * _UPDATE_INTERVAL_/1000
-        self.offset_y += self.speed_y * _UPDATE_INTERVAL_/1000
+        self.offset_x += self.speed_x * _UPDATE_INTERVAL_/1000 * self.show_length / self.length
+        self.offset_y += self.speed_y * _UPDATE_INTERVAL_/1000 * self.show_length / self.width
 
         if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:
             self.offset_x = self.offset_x % self.show_length + self.show_length

@@ -52,7 +52,7 @@ def normalize(vector):
     if vector.all() == 0:
         return vector
     else:
-        return vector/np.linalg.norm(vector)
+        return vector/vector_length(vector)
 
 class model:
     def __init__(self):
@@ -143,8 +143,14 @@ class model:
         return composition_force
 
     # motion analysis
-    def motion_analysis(self, F):
+    def motion_analysis(self, F, collision_flag):
+        # rotation
+        if collision_flag & 0x01:
+            rotation_speed = 180 * self.ball_speed * _UPDATE_INTERVAL_/1000 /self.ball.redius/(pi)
+            self.ball.update_rotation_speed(rotation_speed)
+
         a = F/self.ball.mess
+        # motion
         if (self.ball_speed * self.contact_point).all() == 0 and self.contact_point != -1:    # circular motion
             d_Theta, d_Phi = self.line_speed2angular_speed()
             new_contact_point = self.contact_point
@@ -166,6 +172,8 @@ class model:
         else:       # Linear motion
             self.ball.center += self.ball_speed * _UPDATE_INTERVAL_/1000
             self.ball_speed += (a * _UPDATE_INTERVAL_/1000)
+
+        self.ball.draw_center = self.ball.center
 
 
     # translate line speed(x, y, z) to angle speed(Theta Phi)
@@ -202,6 +210,16 @@ class model:
 
         return d_Theta, d_Phi
 
+    # Avoid moulding when collision
+    def Position_Correction(self, collision_flag):
+        if collision_flag & 0x01:
+            self.ball.draw_center = normalize(self.ball.center - self.bowl.center) * (self.bowl.redius - self.ball.redius) + self.bowl.center
+            self.ball.draw_center = (self.ball.draw_center + self.ball.center)/2
+        elif collision_flag & 0x02:
+            pass
+        elif collision_flag & 0x04:
+            self.ball.draw_center[2] = self.ground.coordinate_z + self.ball.redius
+            self.ball.draw_center[2] = (self.ball.draw_center[2] + self.ball.center[2])/2
     
     def Physics_analysis(self):
         # check the status of the ball
@@ -211,7 +229,9 @@ class model:
         # compose all forces
         composition_force = self.forces_analysis(collision_forces)
         # based on composition force to update the position of the ball and update the velocity of the ball
-        self.motion_analysis(composition_force)
+        self.motion_analysis(composition_force, collision_flag)
+        # Avoid moulding when collision
+        self.Position_Correction(collision_flag)
 
     def draw(self):
         # draw objects
@@ -221,8 +241,16 @@ class model:
         self.ground.draw()
 
     def update_parameters(self, parameters):
+        self.damping_offset = parameters["energy loss"]
         self.ball_speed -= np.array([parameters["speed y"], parameters["speed x"], 0]) - self.relative_speed
         self.relative_speed = np.array([parameters["speed y"], parameters["speed x"], 0])
 
-        self.ball.update_parameters(parameters["redius"], parameters["ball mess"])
+        self.ball.update_parameters(parameters["redius"])
         self.ground.update_parameters(parameters["speed x"], parameters["speed y"])
+
+
+    def reset(self):
+        self.ball_speed = np.array([0.0, 0.0, 0.0])
+        self.relative_speed = np.array([0.0, 0.0, 0.0])
+        self.ball.__init__()
+        self.ground.__init__()

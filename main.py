@@ -18,8 +18,10 @@ aspect = width/height
 _OBSERVATION_DISTANCE_ = 6.0
 
 # parameters in new window
-_ROBOT_MESS_MINI_ = 1.0
-_ROBOT_MESS_RANGE_ = 9.0
+_ENERGY_LOSS_MINI_ = 0.0
+_ENERGY_LOSS_RANGE_ = 0.5
+_ENERGY_LOSS_INIT_ = 0.2
+
 _SPRING_MESS_MINI_ = 1
 _SPRING_MESS_RANGE_ = 5
 _DAMPING_MESS_MINI_ = 4000
@@ -28,12 +30,12 @@ _DAMPING_MESS_RANGE_ = 6000
 # parameters in main window
 _BALL_REDIUS_MINI_ = 0.1
 _BALL_REDIUS_RANGE_ = 0.5
-_BALL_MESS_MINI_ = 0.1
-_BALL_MESS_RANGE_ = 2.0
-_ROBOT_SPEED_X_MINI_ = 0.0
-_ROBOT_SPEED_X_RANGE_ = 40.0
-_ROBOT_SPEED_Y_MINI_ = 0.0
-_ROBOT_SPEED_Y_RANGE_ = 40.0
+_BALL_REDIUS_INIT_ = 0.2
+
+_ROBOT_SPEED_X_MINI_ = -10.0
+_ROBOT_SPEED_X_RANGE_ = -_ROBOT_SPEED_X_MINI_ * 2
+_ROBOT_SPEED_Y_MINI_ = -10.0
+_ROBOT_SPEED_Y_RANGE_ = -_ROBOT_SPEED_Y_MINI_ * 2
 
 class SimpleViewer(QtOpenGL.QGLWidget):
 
@@ -141,13 +143,14 @@ class NewWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
 
         parameters = QtWidgets.QGridLayout()
-        # set the mess of the bowl and the robot
-        parameters.addWidget(QtWidgets.QLabel("Robot Mess(kg):"), 0, 0)
-        self.Slider_mess = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.Slider_mess.valueChanged.connect(self.update_label)
-        parameters.addWidget(self.Slider_mess, 0, 1)
-        self.mess_label = QtWidgets.QLabel("NA")    # the label shows the value of the slider
-        parameters.addWidget(self.mess_label, 0, 2)
+        # set the rate of energy loss
+        parameters.addWidget(QtWidgets.QLabel("Energy Loss:"), 0, 0)
+        self.Energy_Loss = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Energy_Loss.setValue(int(_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_/_ENERGY_LOSS_RANGE_*100))
+        self.Energy_Loss.valueChanged.connect(self.update_label)
+        parameters.addWidget(self.Energy_Loss, 0, 1)
+        self.energy_label = QtWidgets.QLabel("NA")    # the label shows the value of the slider
+        parameters.addWidget(self.energy_label, 0, 2)
 
         # set Spring Constant
         parameters.addWidget(QtWidgets.QLabel("Spring Constant:"), 1, 0)
@@ -167,20 +170,20 @@ class NewWindow(QtWidgets.QMainWindow):
 
         gui_layout.addLayout(parameters)
 
-        # reset button
-        Reset_button = QtWidgets.QPushButton("Reset")
-        gui_layout.addWidget(Reset_button)
-
         # update the value of the sliders
         self.update_label()
 
     def update_label(self):
-        self.mess_label.setText("%.1f" % (self.Slider_mess.value()*_ROBOT_MESS_RANGE_/100 + _ROBOT_MESS_MINI_))
+        self.energy_label.setText("%.1f" % (self.Energy_Loss.value()*_ENERGY_LOSS_RANGE_/100 + _ENERGY_LOSS_MINI_))
         self.Spring_label.setText("%.1f" % (self.Slider_Spring.value()*_SPRING_MESS_RANGE_/100 + _SPRING_MESS_MINI_))
         self.Damping_label.setText("%.1f" % (self.Slider_Damping.value()*_DAMPING_MESS_RANGE_/100 + _DAMPING_MESS_MINI_))
         self.reload_parameters_flag = True
 
-    
+    def reset_para(self):
+        self.Energy_Loss.setValue(int(_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_/_ENERGY_LOSS_RANGE_*100))
+
+
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -223,70 +226,76 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_layout.addWidget(self.glWidget)
 
         # sliders x, y, z
-        SliderX = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        SliderX.valueChanged.connect(lambda val: self.glWidget.setRotX(val))
-        gui_layout.addWidget(SliderX)
+        self.SliderX = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.SliderX.valueChanged.connect(lambda val: self.glWidget.setRotX(val))
+        gui_layout.addWidget(self.SliderX)
 
-        SliderY = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        SliderY.setValue(50)
-        SliderY.valueChanged.connect(lambda val: self.glWidget.setRotY(val))
-        gui_layout.addWidget(SliderY)
+        self.SliderY = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.SliderY.setValue(50)
+        self.SliderY.valueChanged.connect(lambda val: self.glWidget.setRotY(val))
+        gui_layout.addWidget(self.SliderY)
 
         # parameters form
         # the redus of the ball
         parameters = QtWidgets.QGridLayout()
         parameters.addWidget(QtWidgets.QLabel("Ball Redius:"), 0, 0)
         self.Slider_redius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Slider_redius.setValue(int((_BALL_REDIUS_INIT_-_BALL_REDIUS_MINI_)/_BALL_REDIUS_RANGE_*100))
         self.Slider_redius.valueChanged.connect(self.update_parameters)
         parameters.addWidget(self.Slider_redius, 0, 1)
         self.redius_text = QtWidgets.QLabel("NA")
         parameters.addWidget(self.redius_text, 0, 2)
 
-        # the mess of the ball
-        parameters.addWidget(QtWidgets.QLabel("Ball Mess(kg):"), 1, 0)
-        self.Slider_mess = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.Slider_mess.valueChanged.connect(self.update_parameters)
-        parameters.addWidget(self.Slider_mess, 1, 1)
-        self.mess_text = QtWidgets.QLabel("NA")
-        parameters.addWidget(self.mess_text, 1, 2)
-
         # the speed in x axis of the robot
-        parameters.addWidget(QtWidgets.QLabel("Robot Speed(x):"), 2, 0)
+        parameters.addWidget(QtWidgets.QLabel("Robot Speed(x):"), 1, 0)
         self.Slider_xspeed = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Slider_xspeed.setValue(50)
         self.Slider_xspeed.valueChanged.connect(self.update_parameters)
-        parameters.addWidget(self.Slider_xspeed, 2, 1)
+        parameters.addWidget(self.Slider_xspeed, 1, 1)
         self.Speedx_text = QtWidgets.QLabel("NA")
-        parameters.addWidget(self.Speedx_text, 2, 2)
+        parameters.addWidget(self.Speedx_text, 1, 2)
 
         # the speed in y axis of the robot
-        parameters.addWidget(QtWidgets.QLabel("Robot Speed(y):"), 3, 0)
+        parameters.addWidget(QtWidgets.QLabel("Robot Speed(y):"), 2, 0)
         self.Slider_yspeed = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Slider_yspeed.setValue(50)
         self.Slider_yspeed.valueChanged.connect(self.update_parameters)
-        parameters.addWidget(self.Slider_yspeed, 3, 1)
+        parameters.addWidget(self.Slider_yspeed, 2, 1)
         self.Speedy_text = QtWidgets.QLabel("NA")
-        parameters.addWidget(self.Speedy_text, 3, 2)
+        parameters.addWidget(self.Speedy_text, 2, 2)
 
         gui_layout.addLayout(parameters)
+
+        # reset bottom:
+        self.reset_botton = QtWidgets.QPushButton("Reset")
+        self.reset_botton.clicked.connect(self.reset)
+        gui_layout.addWidget(self.reset_botton)
 
         self.update_parameters()
 
     def update_parameters(self):
         parameters = {}
         self.redius_text.setText("%.1f" % (self.Slider_redius.value()*_BALL_REDIUS_RANGE_/100 + _BALL_REDIUS_MINI_))
-        self.mess_text.setText("%.1f" % (self.Slider_mess.value()*_BALL_MESS_RANGE_/100 + _BALL_MESS_MINI_))
         self.Speedx_text.setText("%.1f" % (self.Slider_xspeed.value()*_ROBOT_SPEED_X_RANGE_/100 + _ROBOT_SPEED_X_MINI_))
         self.Speedy_text.setText("%.1f" % (self.Slider_yspeed.value()*_ROBOT_SPEED_Y_RANGE_/100 + _ROBOT_SPEED_Y_MINI_))
         parameters["redius"] = float(self.redius_text.text())
-        parameters["ball mess"] = float(self.mess_text.text())
         parameters["speed x"] = float(self.Speedx_text.text())
         parameters["speed y"] = float(self.Speedy_text.text())
-        parameters["robot mess"] = float(self.newWin.mess_label.text())
+        parameters["energy loss"] = float(self.newWin.energy_label.text())
         parameters["spring"] = float(self.newWin.Spring_label.text())
         parameters["damping"] = float(self.newWin.Damping_label.text())
         
         self.glWidget.model.update_parameters(parameters)
         self.newWin.reload_parameters_flag = False
 
+    def reset(self):
+        self.glWidget.model.reset()
+        self.Slider_redius.setValue(int((_BALL_REDIUS_INIT_-_BALL_REDIUS_MINI_)/_BALL_REDIUS_RANGE_*100))
+        self.Slider_xspeed.setValue(50)
+        self.Slider_yspeed.setValue(50)
+        self.SliderX.setValue(0)
+        self.SliderY.setValue(50)
+        self.update_parameters()
 
 if __name__ == '__main__':
 
