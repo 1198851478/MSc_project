@@ -247,7 +247,8 @@ class model:
         self.relative_speed = np.array([parameters["speed x"], parameters["speed y"], 0])
         self.position_correction_flag = parameters["position correction"]
 
-        self.ball.update_parameters(parameters["redius"])
+        self.ball.update_parameters(parameters["ball redius"])
+        self.bowl.update_parameters(parameters["bowl redius"])
         self.ground.update_parameters(parameters["speed y"], parameters["speed x"])
 
 
@@ -255,4 +256,5 @@ class model:
         self.ball_speed = np.array([0.0, 0.0, 0.0])
         self.relative_speed = np.array([0.0, 0.0, 0.0])
         self.ball.__init__()
+        self.bowl.__init__()
         self.ground.__init__()

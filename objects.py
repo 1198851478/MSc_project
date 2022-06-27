@@ -98,6 +98,10 @@ class bowl:
         self.center = np.array([0.0, 0.0, 1.0])
         self.redius = 1.0
 
+    def update_parameters(self, new_redius):
+        self.center = np.array([0.0, 0.0, new_redius])
+        self.redius = new_redius
+
     def draw(self):
         for i in range(0, 50 + 1):
                 lat0 = pi * (-0.5 + float(float(i - 1) / float(self.lats)))
