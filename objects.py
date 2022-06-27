@@ -7,6 +7,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pygame import *
 
 import numpy as np
+_UPDATE_INTERVAL_ = 25
 
 class robot:
     def __init__(self):
@@ -127,19 +128,18 @@ class ball:
     def __init__(self):
         self.lats = 100
         self.longs = 100
-        self.center = np.array([0.0, 0.0, 0.2])
-        self.redius = 0.1
+        self.center = np.array([0.0, 0.5, 1.0])
+        self.redius = 0.4
         self.rotation = np.array([0, 0, 0])
-        self.position = np.array([0, 0, 0.1])
         self.mess = 0.1
 
     # change the redus and the mess of the ball
     def update_parameters(self, redius, mess):
         self.redius = redius
 
-    def update_position(self, new_rotation, new_position):
+    def update_position(self, new_rotation, new_center):
         self.rotation = new_rotation
-        self.position = new_position
+        self.center = new_center
 
     def draw(self):
         glMatrixMode(GL_MODELVIEW);
@@ -149,7 +149,7 @@ class ball:
 
         glPushMatrix(); #remember current matrix
         
-        glTranslatef(self.position[0], self.position[1], self.position[2])
+        glTranslatef(self.center[0], self.center[1], self.center[2])
 
         glRotate(self.rotation[0], 1, 0, 0)
         glRotate(self.rotation[1], 0, 1, 0)
@@ -189,11 +189,13 @@ class ground:
         self.show_length = min(self.textureSurface.get_height(), self.textureSurface.get_width())/3
         self.offset_x = self.show_length
         self.offset_y = self.show_length
+        self.speed_x = 0.0
+        self.speed_y = 0.0
         self.coordinate_z = -1.0
 
-    def update_offset(self, offset_x, offset_y):
-        self.offset_x = offset_x
-        self.offset_y = offset_y
+    def update_offset(self):
+        self.offset_x += self.speed_x * _UPDATE_INTERVAL_/1000
+        self.offset_y += self.speed_y * _UPDATE_INTERVAL_/1000
 
         if self.offset_x >= self.show_length * 2 or self.offset_x <= 0:
             self.offset_x = self.offset_x % self.show_length + self.show_length
@@ -202,7 +204,8 @@ class ground:
             self.offset_y = self.offset_y % self.show_length + self.show_length
 
     def update_parameters(self, speedx, speedy):
-        print("set speedx sppeedy", speedx, speedy)
+        self.speed_x = speedx
+        self.speed_y = speedy
 
     def draw(self):
         glEnable(GL_TEXTURE_2D)
@@ -223,6 +226,7 @@ class ground:
         glDisable(GL_TEXTURE_2D)
 
     def read_texture(self):
+        self.update_offset()
         textureSurface = self.textureSurface.subsurface(self.offset_x, self.offset_y, self.show_length, self.show_length)
         textureData = image.tostring(textureSurface, "RGBA", 1)
 

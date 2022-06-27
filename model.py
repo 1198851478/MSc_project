@@ -1,8 +1,8 @@
 from objects import *
+from objects import _UPDATE_INTERVAL_
 import numpy as np
 
-_GRAVITATIONAL_ACCELERATION_ = np.array([0, 0, 9.8])
-_UPDATE_INTERVAL_ = 20
+_GRAVITATIONAL_ACCELERATION_ = np.array([0, 0, -20])
 
 # calculate the distance between two point
 def vector_length(vector):
@@ -49,7 +49,10 @@ def Spherical2Cartesian(Spherical):
     return np.array([x, y, z])
 
 def normalize(vector):
-    return vector/np.linalg.norm(vector)
+    if vector.all() == 0:
+        return vector
+    else:
+        return vector/np.linalg.norm(vector)
 
 class model:
     def __init__(self):
@@ -58,12 +61,12 @@ class model:
         self.bowl = bowl()
         self.ball = ball()
         self.ground = ground()
-        self.k_p = 0.5
-        self.k_v = 0.5
-        self.k_f = 0.5 # energy loss
+        self.k_p = 180    # spring constant
+        self.k_v = 60 # damping coefficient
+        self.k_f = 1 # energy loss
         self.ball_speed = np.array([0.0, 0.0, 0.0])
-        self.contact_point = Cartesian2Spherical(self.ball.center - self.bowl.center)
-        self.contact_point[0] = self.bowl.redius
+        self.relative_speed = np.array([0.0, 0.0, 0.0])
+        self.damping_offset = 0.2
 
     # check whether collision occurs
     def collision_detection(self):
@@ -72,6 +75,9 @@ class model:
         # check whether the ball sticks to the bowl in a circular motion
         if distance_with_bowl != self.bowl.redius - self.ball.redius:
             self.contact_point = -1
+        else:
+            self.contact_point = Cartesian2Spherical(self.ball.center - self.bowl.center)
+            self.contact_point[0] = self.bowl.redius
         # check whether the ball interact with the bowl
         if distance_with_bowl > self.bowl.redius - self.ball.redius and distance_with_bowl < self.bowl.redius + self.ball.redius \
             and self.ball.center[2] <= self.bowl.center[2]:
@@ -90,21 +96,18 @@ class model:
         if collision_flag & 0x01:
             distance_with_bowl = vector_length(self.ball.center - self.bowl.center)
             # the direction of collision force
-            normal = -normalize(self.contact_point)
+            normal = normalize(self.bowl.center - self.ball.center)
 
             interact_dis = distance_with_bowl + self.ball.redius - self.bowl.redius
             angle = angle_of_vector(normal, self.ball_speed)
             velocity_collision = vector_length(self.ball_speed) * cos(angle)
             # gravity
-            gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_ * [0, 0, -1] * normal
+            gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_ * normal
             # collision force: f_n = mg + mp_z
-            acceleration_collision = self.k_p * interact_dis - self.k_v * velocity_collision
+            acceleration_collision = self.k_p * sqrt(interact_dis) - min(self.k_v * velocity_collision, 0)
 
-            if distance_with_bowl > self.bowl.redius:
-                collision_force_with_bowl = acceleration_collision * normal * self.ball.mess + gravity
-            else:
-                collision_force_with_bowl = -acceleration_collision * normal * self.ball.mess + gravity
-
+            # if distance_with_bowl > self.bowl.redius:
+            collision_force_with_bowl = acceleration_collision * normal * self.ball.mess + gravity
             collision_forces.append(collision_force_with_bowl)
         if collision_flag & 0x02:
             pass
@@ -113,9 +116,9 @@ class model:
             normal = np.array([0,0,1])
             angle = angle_of_vector(normal, self.ball_speed)
             velocity_collision = vector_length(self.ball_speed) * cos(angle)
-            acceleration_collision = self.k_p * interact_dis - self.k_v * velocity_collision
+            acceleration_collision = self.k_p * interact_dis - min(self.k_v * velocity_collision, 0)
             # gravity
-            gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_ * [0, 0, -1]
+            gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_
             # collision force: f_n = mg + mp_z
             collision_force_with_ground = acceleration_collision * normal * self.ball.mess + gravity
             collision_forces.append(collision_force_with_ground)
@@ -125,15 +128,14 @@ class model:
     def forces_analysis(self, collision_forces):
         composition_force = 0
         # air resistance
-        damping_force = -self.k_f * (pi * self.ball.redius**2) * vector_length(self.ball_speed) * normalize(self.ball_speed)
+        damping_force = -self.k_f * (pi * self.ball.redius**2) * vector_length(self.ball_speed) * normalize(self.ball_speed) \
+            - normalize(self.ball_speed) * self.damping_offset
         composition_force += damping_force
         
-        # the ball is not in the bottom of the bowl
-        if self.contact_point[1] != 0:
-            gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_ * [0, 0, -1]
-            # The component of gravity in the direction of velocity
-            gravity_speed = gravity * normalize(self.ball_speed)
-            composition_force += gravity_speed
+        # calculate gravity
+        gravity = self.ball.mess * _GRAVITATIONAL_ACCELERATION_
+
+        composition_force += gravity
 
         for collision_force in collision_forces:
             composition_force += collision_force
@@ -143,12 +145,12 @@ class model:
     # motion analysis
     def motion_analysis(self, F):
         a = F/self.ball.mess
-        if (self.ball_speed * (self.contact_point)).all() == 0:    # circular motion
+        if (self.ball_speed * self.contact_point).all() == 0 and self.contact_point != -1:    # circular motion
             d_Theta, d_Phi = self.line_speed2angular_speed()
             new_contact_point = self.contact_point
-            new_contact_point[1] += d_Theta * _UPDATE_INTERVAL_
+            new_contact_point[1] += d_Theta * _UPDATE_INTERVAL_/1000
             if d_Phi != inf:
-                new_contact_point[2] += d_Phi * _UPDATE_INTERVAL_
+                new_contact_point[2] += d_Phi * _UPDATE_INTERVAL_/1000
             # the spherical coordination of the ball
             spherical_ball_center = np.array(self.bowl.redius - self.ball.redius, new_contact_point[1], new_contact_point[2])
             # translate spherical coordination to Cartesian coordination
@@ -157,13 +159,13 @@ class model:
             # update ball speed
             value_velocity = vector_length(self.ball_speed)
             value_a = vector_length(a)
-            value_velocity += value_a * _UPDATE_INTERVAL_
+            value_velocity += value_a * _UPDATE_INTERVAL_/1000
             # the normal of the plane
             normal = np.cross(new_contact_point, self.contact_point)
             self.ball_speed = value_velocity * normalize(normal * new_contact_point)
         else:       # Linear motion
-            self.ball.center += self.ball_speed*_UPDATE_INTERVAL_
-            self.ball_speed += (a*_UPDATE_INTERVAL_)
+            self.ball.center += self.ball_speed * _UPDATE_INTERVAL_/1000
+            self.ball_speed += (a * _UPDATE_INTERVAL_/1000)
 
 
     # translate line speed(x, y, z) to angle speed(Theta Phi)
@@ -219,5 +221,8 @@ class model:
         self.ground.draw()
 
     def update_parameters(self, parameters):
+        self.ball_speed -= np.array([parameters["speed y"], parameters["speed x"], 0]) - self.relative_speed
+        self.relative_speed = np.array([parameters["speed y"], parameters["speed x"], 0])
+
         self.ball.update_parameters(parameters["redius"], parameters["ball mess"])
         self.ground.update_parameters(parameters["speed x"], parameters["speed y"])

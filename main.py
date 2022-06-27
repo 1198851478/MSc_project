@@ -9,7 +9,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtOpenGL
 
 from model import *
-from model import _UPDATE_INTERVAL_
+from objects import _UPDATE_INTERVAL_
 
 width = 800
 height = 600
@@ -20,10 +20,10 @@ _OBSERVATION_DISTANCE_ = 6.0
 # parameters in new window
 _ROBOT_MESS_MINI_ = 1.0
 _ROBOT_MESS_RANGE_ = 9.0
-_SPRING_MESS_MINI_ = 0.1
-_SPRING_MESS_RANGE_ = 0.9
-_DAMPING_MESS_MINI_ = 0.1
-_DAMPING_MESS_RANGE_ = 0.9
+_SPRING_MESS_MINI_ = 1
+_SPRING_MESS_RANGE_ = 5
+_DAMPING_MESS_MINI_ = 4000
+_DAMPING_MESS_RANGE_ = 6000
 
 # parameters in main window
 _BALL_REDIUS_MINI_ = 0.1
@@ -31,9 +31,9 @@ _BALL_REDIUS_RANGE_ = 0.5
 _BALL_MESS_MINI_ = 0.1
 _BALL_MESS_RANGE_ = 2.0
 _ROBOT_SPEED_X_MINI_ = 0.0
-_ROBOT_SPEED_X_RANGE_ = 1.0
+_ROBOT_SPEED_X_RANGE_ = 40.0
 _ROBOT_SPEED_Y_MINI_ = 0.0
-_ROBOT_SPEED_Y_RANGE_ = 1.0
+_ROBOT_SPEED_Y_RANGE_ = 40.0
 
 class SimpleViewer(QtOpenGL.QGLWidget):
 
@@ -44,7 +44,7 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         self.offset_z = 1.0
 
         self.angle1 = 0
-        self.angle2 = 0
+        self.angle2 = 0.25 * pi
         
         # Direction of light
         self.direction = [1.0, 2.0, 1.0, 1.0]
@@ -108,6 +108,9 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         
         # Set shade model
         glShadeModel(self.surface)
+
+        # Physics model
+        self.model.Physics_analysis()
 
         # draw objects
         self.model.draw()
@@ -225,6 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_layout.addWidget(SliderX)
 
         SliderY = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        SliderY.setValue(50)
         SliderY.valueChanged.connect(lambda val: self.glWidget.setRotY(val))
         gui_layout.addWidget(SliderY)
 
