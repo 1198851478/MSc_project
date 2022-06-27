@@ -125,8 +125,41 @@ class SimpleViewer(QtOpenGL.QGLWidget):
         self.angle2 = 0.5 * pi * val/100
         self.resizeGL(self.original_width, self.original_height)
 
-# new window for property
-class NewWindow(QtWidgets.QMainWindow):
+# a new window for monitor
+class Monitor_Window(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Monitor')
+        self.resize(400, 230)
+
+        self.initGUI()
+
+    def initGUI(self):
+        central_widget = QtWidgets.QWidget()
+        gui_layout = QtWidgets.QVBoxLayout()
+        central_widget.setLayout(gui_layout)
+        self.setCentralWidget(central_widget)
+
+        informations = QtWidgets.QGridLayout()
+
+        informations.addWidget(QtWidgets.QLabel("Ball Speed:"), 0, 0)
+        self.ball_speed_label = QtWidgets.QLabel("NA")
+        informations.addWidget(self.ball_speed_label, 0, 1)
+
+        informations.addWidget(QtWidgets.QLabel("Ball Center:"), 1, 0)
+        self.ball_center_label = QtWidgets.QLabel("NA")
+        informations.addWidget(self.ball_center_label, 1, 1)
+
+        gui_layout.addLayout(informations)
+
+    def update_information(self, model):
+        self.ball_speed_label.setText("x: "+ "%.1f" % model.ball_speed[0] + \
+            " y: "+ "%.1f" % model.ball_speed[1]+ " z: "+ "%.1f" % model.ball_speed[2])
+        self.ball_center_label.setText("x: "+ "%.1f" % model.ball.center[0] + \
+            " y: "+ "%.1f" % model.ball.center[1]+ " z: "+ "%.1f" % model.ball.center[2])
+
+# a new window for property
+class Property_Window(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Property')
@@ -146,7 +179,7 @@ class NewWindow(QtWidgets.QMainWindow):
         # set the rate of energy loss
         parameters.addWidget(QtWidgets.QLabel("Energy Loss:"), 0, 0)
         self.Energy_Loss = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.Energy_Loss.setValue(int(_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_/_ENERGY_LOSS_RANGE_*100))
+        self.Energy_Loss.setValue(int((_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_)/_ENERGY_LOSS_RANGE_*100))
         self.Energy_Loss.valueChanged.connect(self.update_label)
         parameters.addWidget(self.Energy_Loss, 0, 1)
         self.energy_label = QtWidgets.QLabel("NA")    # the label shows the value of the slider
@@ -180,10 +213,7 @@ class NewWindow(QtWidgets.QMainWindow):
         self.reload_parameters_flag = True
 
     def reset_para(self):
-        self.Energy_Loss.setValue(int(_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_/_ENERGY_LOSS_RANGE_*100))
-
-
-
+        self.Energy_Loss.setValue(int((_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_)/_ENERGY_LOSS_RANGE_*100))
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -193,7 +223,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle('Simulation')
 
         # show the property
-        self.newWin = NewWindow()
+        self.property_win = Property_Window()
+
+         # show the monitor
+        self.monitor_win = Monitor_Window()
 
         # set up the display
 
@@ -207,21 +240,29 @@ class MainWindow(QtWidgets.QMainWindow):
         timer.start()
     
     def Update_GUI(self):
-        if self.newWin.reload_parameters_flag:
+        if self.property_win.reload_parameters_flag:
             self.update_parameters()
         self.glWidget.updateGL()
+        self.monitor_win.update_information(self.glWidget.model)
 
     def initGUI(self):
         central_widget = QtWidgets.QWidget()
         gui_layout = QtWidgets.QVBoxLayout()
         central_widget.setLayout(gui_layout)
-
-        # the button for property
-        Run_button = QtWidgets.QPushButton("Property")
-        Run_button.clicked.connect(self.newWin.show)
-        gui_layout.addWidget(Run_button)
-
         self.setCentralWidget(central_widget)
+
+        new_win_layout = QtWidgets.QGridLayout()
+        # the button for property
+        show_property = QtWidgets.QPushButton("Property")
+        show_property.clicked.connect(self.property_win.show)
+        new_win_layout.addWidget(show_property, 0, 0)
+
+        # the button for monitor
+        show_monitor = QtWidgets.QPushButton("Monitor")
+        show_monitor.clicked.connect(self.monitor_win.show)
+        new_win_layout.addWidget(show_monitor, 0, 1)
+
+        gui_layout.addLayout(new_win_layout)
 
         gui_layout.addWidget(self.glWidget)
 
@@ -236,7 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_layout.addWidget(self.SliderY)
 
         # parameters form
-        # the redus of the ball
+        # the redius of the ball
         parameters = QtWidgets.QGridLayout()
         parameters.addWidget(QtWidgets.QLabel("Ball Redius:"), 0, 0)
         self.Slider_redius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -281,12 +322,12 @@ class MainWindow(QtWidgets.QMainWindow):
         parameters["redius"] = float(self.redius_text.text())
         parameters["speed x"] = float(self.Speedx_text.text())
         parameters["speed y"] = float(self.Speedy_text.text())
-        parameters["energy loss"] = float(self.newWin.energy_label.text())
-        parameters["spring"] = float(self.newWin.Spring_label.text())
-        parameters["damping"] = float(self.newWin.Damping_label.text())
+        parameters["energy loss"] = float(self.property_win.energy_label.text())
+        parameters["spring"] = float(self.property_win.Spring_label.text())
+        parameters["damping"] = float(self.property_win.Damping_label.text())
         
         self.glWidget.model.update_parameters(parameters)
-        self.newWin.reload_parameters_flag = False
+        self.property_win.reload_parameters_flag = False
 
     def reset(self):
         self.glWidget.model.reset()
