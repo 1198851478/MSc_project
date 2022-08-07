@@ -1,4 +1,5 @@
 import sys
+import time as timing
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -26,14 +27,14 @@ _AMBIENT_LIGHT_MINI_ = 0.0
 _AMBIENT_LIGHT_RANGE_ = 1.0
 _AMBIENT_LIGHT_INIT_ = 0.5
 
-_BOWL_REDIUS_MINI_ = 1.0
-_BOWL_REDIUS_RANGE_ = 1.0
-_BOWL_REDIUS_INIT_ = 1.0
+_BOWL_radius_MINI_ = 1.0
+_BOWL_radius_RANGE_ = 0.6
+_BOWL_radius_INIT_ = 1.0
 
 # parameters in main window
-_BALL_REDIUS_MINI_ = 0.1
-_BALL_REDIUS_RANGE_ = 0.5
-_BALL_REDIUS_INIT_ = 0.2
+_BALL_radius_MINI_ = 0.1
+_BALL_radius_RANGE_ = 0.5
+_BALL_radius_INIT_ = 0.2
 
 _ROBOT_SPEED_Y_MINI_ = -10.0
 _ROBOT_SPEED_Y_RANGE_ = -_ROBOT_SPEED_Y_MINI_ * 2
@@ -155,9 +156,12 @@ class Monitor_Window(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Monitor')
-        self.resize(400, 230)
+        self.resize(500, 250)
 
         self.initGUI()
+
+        self.render_time = -1
+        self.render_time_count = 0
 
     def initGUI(self):
         central_widget = QtWidgets.QWidget()
@@ -175,6 +179,14 @@ class Monitor_Window(QtWidgets.QMainWindow):
         self.ball_center_label = QtWidgets.QLabel("NA")
         informations.addWidget(self.ball_center_label, 1, 1)
 
+        informations.addWidget(QtWidgets.QLabel("Observation Point:"), 2, 0)
+        self.observation_point_label = QtWidgets.QLabel("NA")
+        informations.addWidget(self.observation_point_label, 2, 1)
+
+        informations.addWidget(QtWidgets.QLabel("Render Time(ms):"), 3, 0)
+        self.render_time_label = QtWidgets.QLabel("NA")
+        informations.addWidget(self.render_time_label, 3, 1)
+
         gui_layout.addLayout(informations)
 
     def update_information(self, model):
@@ -183,12 +195,20 @@ class Monitor_Window(QtWidgets.QMainWindow):
         self.ball_center_label.setText("x: "+ "%.1f" % model.ball.draw_center[0] + \
             " y: "+ "%.1f" % model.ball.draw_center[1]+ " z: "+ "%.1f" % model.ball.draw_center[2])
 
+        Observation_point = Cartesian2Spherical(model.ball.Observation_point)
+        Observation_point[1] = Observation_point[1]*180/pi
+        Observation_point[2] = Observation_point[2]*180/pi
+        self.observation_point_label.setText("r: "+ "%.1f" % Observation_point[0] + \
+            " theta: "+ "%.1f" % Observation_point[1]+ " phi: "+ "%.1f" % Observation_point[2])
+
+        self.render_time_label.setText("%.2f" % self.render_time)
+
 # a new window for property
 class Property_Window(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Property')
-        self.resize(500, 230)
+        self.resize(500, 300)
 
         self.initGUI()
 
@@ -213,12 +233,12 @@ class Property_Window(QtWidgets.QMainWindow):
         self.energy_label = QtWidgets.QLabel("NA")    # the label shows the value of the slider
         parameters.addWidget(self.energy_label, 0, 2)
 
-        # set the redius of the bowl
-        parameters.addWidget(QtWidgets.QLabel("Bowl Redius:"), 1, 0)
-        self.Bowl_Redius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.Bowl_Redius.setValue(int((_BOWL_REDIUS_INIT_-_BOWL_REDIUS_MINI_)/_BOWL_REDIUS_RANGE_*100))
-        self.Bowl_Redius.valueChanged.connect(self.update_label)
-        parameters.addWidget(self.Bowl_Redius, 1, 1)
+        # set the radius of the bowl
+        parameters.addWidget(QtWidgets.QLabel("Bowl radius:"), 1, 0)
+        self.Bowl_radius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Bowl_radius.setValue(int((_BOWL_radius_INIT_-_BOWL_radius_MINI_)/_BOWL_radius_RANGE_*100))
+        self.Bowl_radius.valueChanged.connect(self.update_label)
+        parameters.addWidget(self.Bowl_radius, 1, 1)
         self.bowl_label = QtWidgets.QLabel("NA")    # the label shows the value of the slider
         parameters.addWidget(self.bowl_label, 1, 2)
 
@@ -255,7 +275,7 @@ class Property_Window(QtWidgets.QMainWindow):
     # update labels based on sliders value
     def update_label(self):
         self.energy_label.setText("%.1f" % (self.Energy_Loss.value()*_ENERGY_LOSS_RANGE_/100 + _ENERGY_LOSS_MINI_))
-        self.bowl_label.setText("%.1f" % (self.Bowl_Redius.value()*_BOWL_REDIUS_RANGE_/100 + _BOWL_REDIUS_MINI_))
+        self.bowl_label.setText("%.1f" % (self.Bowl_radius.value()*_BOWL_radius_RANGE_/100 + _BOWL_radius_MINI_))
         self.Ambient_label.setText("%.1f" % (self.Ambient_Light.value()*_AMBIENT_LIGHT_RANGE_/100 + _AMBIENT_LIGHT_MINI_))
         if self.Spot_switch.isChecked():
             self.Parallel_label.setText("Spot Light")
@@ -271,7 +291,7 @@ class Property_Window(QtWidgets.QMainWindow):
         # reset para
         self.check_position_correction.setChecked(False)
         self.Energy_Loss.setValue(int((_ENERGY_LOSS_INIT_-_ENERGY_LOSS_MINI_)/_ENERGY_LOSS_RANGE_*100))
-        self.Bowl_Redius.setValue(int((_BOWL_REDIUS_INIT_-_BOWL_REDIUS_MINI_)/_BOWL_REDIUS_RANGE_*100))
+        self.Bowl_radius.setValue(int((_BOWL_radius_INIT_-_BOWL_radius_MINI_)/_BOWL_radius_RANGE_*100))
         self.Ambient_Light.setValue(int((_AMBIENT_LIGHT_INIT_-_AMBIENT_LIGHT_MINI_)/_AMBIENT_LIGHT_RANGE_*100))
         self.light_switch.setChecked(True)
         self.Spot_switch.setChecked(True)
@@ -304,12 +324,22 @@ class MainWindow(QtWidgets.QMainWindow):
         timer.start()
     
     def Update_GUI(self):
+        time_start = timing.time()
         if self.property_win.reload_parameters_flag:
             self.update_parameters()
             self.glWidget.update_light(float(self.property_win.Ambient_label.text()), self.property_win.light_switch._handle_position == 1.0,\
                 self.property_win.Spot_switch._handle_position == 0.0)
         self.glWidget.updateGL()
         self.monitor_win.update_information(self.glWidget.model)
+
+        # record time
+        time_end = timing.time()
+
+        if self.monitor_win.render_time_count > 20:
+            self.monitor_win.render_time_count = 0
+            self.monitor_win.render_time = (time_end-time_start) * 1000
+
+        self.monitor_win.render_time_count += 1
 
     def initGUI(self):
         central_widget = QtWidgets.QWidget()
@@ -344,15 +374,15 @@ class MainWindow(QtWidgets.QMainWindow):
         gui_layout.addWidget(self.SliderY)
 
         # parameters form
-        # the redius of the ball
+        # the radius of the ball
         parameters = QtWidgets.QGridLayout()
-        parameters.addWidget(QtWidgets.QLabel("Ball Redius:"), 0, 0)
-        self.Slider_redius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.Slider_redius.setValue(int((_BALL_REDIUS_INIT_-_BALL_REDIUS_MINI_)/_BALL_REDIUS_RANGE_*100))
-        self.Slider_redius.valueChanged.connect(self.update_parameters)
-        parameters.addWidget(self.Slider_redius, 0, 1)
-        self.redius_text = QtWidgets.QLabel("NA")
-        parameters.addWidget(self.redius_text, 0, 2)
+        parameters.addWidget(QtWidgets.QLabel("Ball radius:"), 0, 0)
+        self.Slider_radius = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.Slider_radius.setValue(int((_BALL_radius_INIT_-_BALL_radius_MINI_)/_BALL_radius_RANGE_*100))
+        self.Slider_radius.valueChanged.connect(self.update_parameters)
+        parameters.addWidget(self.Slider_radius, 0, 1)
+        self.radius_text = QtWidgets.QLabel("NA")
+        parameters.addWidget(self.radius_text, 0, 2)
 
         # the speed in x axis of the robot
         parameters.addWidget(QtWidgets.QLabel("Robot Speed(x):"), 1, 0)
@@ -386,11 +416,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_parameters(self):
         parameters = {}
         # main window
-        self.redius_text.setText("%.1f" % (self.Slider_redius.value()*_BALL_REDIUS_RANGE_/100 + _BALL_REDIUS_MINI_))
+        self.radius_text.setText("%.1f" % (self.Slider_radius.value()*_BALL_radius_RANGE_/100 + _BALL_radius_MINI_))
         self.Speedx_text.setText("%.1f" % (self.Slider_xspeed.value()*_ROBOT_SPEED_X_RANGE_/100 + _ROBOT_SPEED_X_MINI_))
         self.Speedy_text.setText("%.1f" % (self.Slider_yspeed.value()*_ROBOT_SPEED_Y_RANGE_/100 + _ROBOT_SPEED_Y_MINI_))
-        parameters["ball redius"] = float(self.redius_text.text())
-        parameters["bowl redius"] = float(self.property_win.bowl_label.text())
+        parameters["ball radius"] = float(self.radius_text.text())
+        parameters["bowl radius"] = float(self.property_win.bowl_label.text())
         parameters["speed x"] = float(self.Speedx_text.text())
         parameters["speed y"] = float(self.Speedy_text.text())
 
@@ -407,9 +437,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # reset property window settings
         self.property_win.reset_para()
         self.glWidget.model.reset()
+        self.glWidget.direction = [1.0, 2.0, 1.0, 1.0]
 
         # set main window parameters
-        self.Slider_redius.setValue(int((_BALL_REDIUS_INIT_-_BALL_REDIUS_MINI_)/_BALL_REDIUS_RANGE_*100))
+        self.Slider_radius.setValue(int((_BALL_radius_INIT_-_BALL_radius_MINI_)/_BALL_radius_RANGE_*100))
         self.Slider_xspeed.setValue(50)
         self.Slider_yspeed.setValue(50)
         self.SliderX.setValue(25)
