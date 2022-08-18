@@ -11,7 +11,7 @@ def vector_length(vector):
 # check whether the ball interact with the cube
 def check_with_cube(center_ball, center_cube, r, b, a, c):
     return abs(center_ball[0] - center_cube[0] < a/2 + r) \
-        and abs(center_ball[1] - center_cube[1] < b/2 + r) and abs(center_ball[2] - center_cube[2])<= c/2 + r
+        and abs(center_ball[1] - center_cube[1] < b/2 + r) and abs(center_ball[2] - center_cube[2])<= c/2
 
 # calculate the angle of v1 and v2
 def angle_of_vector(v1, v2):
@@ -125,7 +125,7 @@ class model:
         return collision_forces
 
     # forces analysis
-    def forces_analysis(self, collision_forces):
+    def forces_analysis(self, collision_forces, collision_flag):
         composition_force = 0
         # air resistance
         damping_force = -self.k_f * (pi * self.ball.radius**2) * vector_length(self.ball_speed) * normalize(self.ball_speed) \
@@ -137,6 +137,12 @@ class model:
 
         composition_force += gravity
 
+        # check if the ball is on the ground
+        if collision_flag & 0x04:
+            relative_velocity = np.array([self.ball_speed[0] - self.ground.speed_y, self.ball_speed[1] - self.ground.speed_x, 0.0])
+            friction = normalize(relative_velocity) *0.1
+            composition_force += friction
+
         for collision_force in collision_forces:
             composition_force += collision_force
 
@@ -144,32 +150,21 @@ class model:
 
     # motion analysis
     def motion_analysis(self, F, collision_flag):
+        if collision_flag & 0x02:
+            if abs(self.ball.center[0]) < self.robot.length/2:
+                self.ball_speed[1] *= -1
+            if abs(self.ball.center[1]) < self.robot.width/2:
+                self.ball_speed[0] *= -1
+
         # rotation
-        if collision_flag & 0x01:
-            rotation_speed = (180/pi) * (self.ball_speed/self.ball.radius) * (self.bowl.radius / (self.bowl.radius - self.ball.radius)) * (_UPDATE_INTERVAL_/1000) * 1.5
+        if collision_flag & 0x01 or collision_flag & 0x02 or collision_flag & 0x04:
+            ball_speed = self.ball_speed
+            if collision_flag & 0x02 or collision_flag & 0x04:
+                ball_speed = -np.array([self.ball_speed[0] - self.ground.speed_y, self.ball_speed[1] - self.ground.speed_x, 0.0])
+            rotation_speed = (180/pi) * (ball_speed/self.ball.radius) * (self.bowl.radius / (self.bowl.radius - self.ball.radius)) * (_UPDATE_INTERVAL_/1000) * 1.5
             self.ball.update_rotation_speed(rotation_speed)
 
         a = F/self.ball.mess
-        # # motion
-        # if (self.ball_speed * self.contact_point).all() == 0 and self.contact_point != -1:    # circular motion
-        #     d_Theta, d_Phi = self.line_speed2angular_speed()
-        #     new_contact_point = self.contact_point
-        #     new_contact_point[1] += d_Theta * _UPDATE_INTERVAL_/1000
-        #     if d_Phi != inf:
-        #         new_contact_point[2] += d_Phi * _UPDATE_INTERVAL_/1000
-        #     # the spherical coordination of the ball
-        #     spherical_ball_center = np.array(self.bowl.radius - self.ball.radius, new_contact_point[1], new_contact_point[2])
-        #     # translate spherical coordination to Cartesian coordination
-        #     self.ball.center = Spherical2Cartesian(spherical_ball_center)   # update the position of the ball
-
-        #     # update ball speed
-        #     value_velocity = vector_length(self.ball_speed)
-        #     value_a = vector_length(a)
-        #     value_velocity += value_a * _UPDATE_INTERVAL_/1000
-        #     # the normal of the plane
-        #     normal = np.cross(new_contact_point, self.contact_point)
-        #     self.ball_speed = value_velocity * normalize(normal * new_contact_point)
-        # else:       # Linear motion
         self.ball.center += self.ball_speed * _UPDATE_INTERVAL_/1000
         self.ball_speed += (a * _UPDATE_INTERVAL_/1000)
 
@@ -227,7 +222,7 @@ class model:
         # analyize collision force
         collision_forces = self.collision_force(collision_flag)
         # compose all forces
-        composition_force = self.forces_analysis(collision_forces)
+        composition_force = self.forces_analysis(collision_forces, collision_flag)
         # based on composition force to update the position of the ball and update the velocity of the ball
         self.motion_analysis(composition_force, collision_flag)
         if self.position_correction_flag:

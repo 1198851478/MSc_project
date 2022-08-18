@@ -132,7 +132,7 @@ class ball:
     def __init__(self):
         self.lats = 100
         self.longs = 100
-        self.center = np.array([0.8, 0.0, 1.0])
+        self.center = np.array([0.0, 0.0, 1.0])
         self.draw_center = self.center
         self.radius = 0.2
         self.rotation = np.array([0.0, 0.0, 0.0])
