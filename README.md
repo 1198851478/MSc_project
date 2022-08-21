@@ -4,8 +4,8 @@ Link to the GitHub repository: https://github.com/1198851478/MSc_project.git
 
 Environment: Python 3.9
 
-Main.py: GUI development (Three windows: main window, property window and monitor window).
-Model.py: Physics model (Three steps: position analysis, force analysis and motion analysis).
-Object.py: Object render property.
+main.py: GUI development (Three windows: main window, property window and monitor window).
+model.py: Physics model (Three steps: position analysis, force analysis and motion analysis).
+object.py: Object render property.
 
 figure: Texture image for the ball and the ground in this project.
